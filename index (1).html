@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find, Book, and Rent a Car Easily</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script type="module">
+        import { createIcons, Menu, X, Search, MapPin, Calendar, Car, ShieldCheck, Heart, Users, DollarSign, Clock, PhoneCall, Mail, ChevronLeft, Signal, Wifi, Battery, Eye, EyeOff, Star } from 'https://cdn.jsdelivr.net/npm/lucide@latest/dist/esm/lucide.js';
+        
+        // Expose createIcons globally to be called from the body onload and in JS functions
+        window.createIcons = () => {
+             // Wrap in try/catch in case the DOM isn't fully ready, preventing script crashes
+             try {
+                createIcons({ icons: { Menu, X, Search, MapPin, Calendar, Car, ShieldCheck, Heart, Users, DollarSign, Clock, PhoneCall, Mail, ChevronLeft, Signal, Wifi, Battery, Eye, EyeOff, Star } });
+             } catch (e) {
+                 console.error("Lucide icon initialization failed:", e);
+             }
+        };
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+        .btn-primary {
+            background-image: linear-gradient(to right, #4c66ff, #1a237e);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+            box-shadow: 0 4px 15px rgba(26, 35, 126, 0.4);
+        }
+        .car-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .car-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+        }
+        
+        /* === TESTIMONIAL STYLES === */
+        .testimonial-slider {
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x mandatory;
+            overflow-x: auto;
+            padding-bottom: 20px;
+        }
+        .testimonial-card {
+            scroll-snap-align: center;
+            flex-shrink: 0;
+            width: 85vw;
+            min-height: 400px; 
+            display: flex; 
+            flex-direction: column;
+            padding: 0; 
+            border-radius: 1rem; 
+        }
+        @media (min-width: 768px) {
+             .testimonial-card {
+                width: calc(50% - 1.5rem); 
+                max-width: 550px; 
+                flex-direction: row;
+             }
+        }
+
+        .testimonial-image-wrapper {
+            width: 100%;
+            height: 200px;
+            overflow: hidden;
+            border-radius: 1rem 1rem 0 0; 
+        }
+        @media (min-width: 768px) {
+            .testimonial-image-wrapper {
+                width: 50%;
+                height: 100%;
+                min-height: 100%;
+                border-radius: 1rem 0 0 1rem; 
+            }
+        }
+        .testimonial-image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .testimonial-content {
+            width: 100%;
+            padding: 1.5rem; 
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        @media (min-width: 768px) {
+            .testimonial-content {
+                width: 50%;
+                padding: 2rem; 
+            }
+        }
+
+        /* Modal styles: IMPORTANT: Use 'fixed' and 'flex' to center */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* Darker overlay for clarity */
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .modal-content {
+            background-color: white;
+            border-radius: 1rem;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .search-input {
+            padding-left: 3rem !important;
+            height: 3.5rem;
+            font-size: 1rem;
+            font-weight: 500;
+            border: 1px solid #e5e7eb;
+            box-shadow: none;
+            transition: border-color 0.15s ease-in-out;
+        }
+        .search-input:focus {
+            border-color: #3b82f6;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+
+        .hero-background-effect {
+            background: radial-gradient(circle at 100% 0%, rgba(191, 219, 254, 0.6) 0%, rgba(255, 255, 255, 0) 65%);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body class="text-gray-800" onload="window.createIcons()">
+
+    <div id="mobile-menu" class="fixed inset-0 z-50 hidden bg-white transform -translate-x-full transition-transform duration-300 ease-in-out md:hidden" role="dialog" aria-modal="true">
+        <div class="p-6 h-full flex flex-col">
+            <div class="flex justify-between items-center mb-8">
+                <div class="text-2xl font-bold text-blue-700">Rent<span class="text-gray-800">Cars</span></div>
+                <button onclick="toggleMobileMenu()" class="text-gray-800 p-2 rounded-full hover:bg-gray-100" aria-label="Close menu">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <nav class="flex flex-col space-y-4 text-lg flex-grow">
+                <a href="#home" class="p-2 rounded-lg hover:bg-blue-50" onclick="toggleMobileMenu()">Home</a>
+                <a href="#about" class="p-2 rounded-lg hover:bg-blue-50" onclick="toggleMobileMenu()">About Us</a>
+                <a href="#deals" class="p-2 rounded-lg hover:bg-blue-50" onclick="toggleMobileMenu()">Rental Deals</a>
+                <a href="#reviews" class="p-2 rounded-lg hover:bg-blue-50" onclick="toggleMobileMenu()">Reviews</a>
+                <a href="#contact" class="p-2 rounded-lg hover:bg-blue-50" onclick="toggleMobileMenu()">Contact</a>
+                <button onclick="toggleMobileMenu(); openModal('signin-modal')" class="mt-auto p-3 rounded-lg btn-primary text-white text-center">Sign In</button>
+            </nav>
+        </div>
+    </div>
+
+    <header class="sticky top-0 z-40 bg-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4 flex justify-between items-center">
+            <a href="#" class="text-xl md:text-2xl font-extrabold text-blue-700 flex items-center space-x-2">
+                <i data-lucide="car" class="w-6 h-6 md:w-8 md:h-8 text-blue-700"></i>
+                <span>Rent<span class="text-gray-800">Cars</span></span>
+            </a>
+            <nav class="hidden md:flex space-x-4 lg:space-x-8 text-sm font-medium">
+                <a href="#home" class="hover:text-blue-600 transition duration-150">Home</a>
+                <a href="#about" class="hover:text-blue-600 transition duration-150">About Us</a>
+                <a href="#deals" class="hover:text-blue-600 transition duration-150">Rental Deals</a>
+                <a href="#reviews" class="hover:text-blue-600 transition duration-150">Reviews</a>
+                <a href="#contact" class="hover:text-blue-600 transition duration-150">Contact</a>
+            </nav>
+
+            <div class="flex items-center space-x-4">
+                <button onclick="openModal('signin-modal')" class="hidden md:block px-5 py-2 text-sm font-medium text-white rounded-full btn-primary shadow-lg">
+                    Sign In
+                </button>
+                <button onclick="toggleMobileMenu()" class="md:hidden p-2 rounded-full hover:bg-gray-100" aria-label="Open menu">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <section id="home" class="relative overflow-hidden pt-6 md:pt-16 pb-12 md:pb-24 bg-white hero-background-effect">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row items-center justify-between">
+                <div class="md:w-1/2 w-full mb-8 md:mb-0 text-center md:text-left">
+                    <h1 class="text-3xl sm:text-5xl lg:text-6xl font-extrabold leading-tight mb-4">
+                        Find, book and rent a car <span class="text-blue-700">easily</span>
+                    </h1>
+                    <p class="text-base md:text-xl text-gray-600 mb-6 md:mb-8 max-w-xl mx-auto md:mx-0">
+                        Get a car for rent anytime and anywhere you need. Simple booking process and transparent pricing.
+                    </p>
+
+                    <div class="flex justify-center md:justify-start space-x-3 md:space-x-4 mb-6 md:mb-10">
+                        <a href="https://play.google.com/store" target="_blank" class="inline-block"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/2560px-Google_Play_Store_badge_EN.svg.png" alt="Google Play" class="h-10 md:h-12 rounded-lg"></a>
+                        <a href="https://www.apple.com/app-store/" target="_blank" class="inline-block"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Download_on_the_App_Store_Badge.svg/2560px-Download_on_the_App_Store_Badge.svg.png" alt="App Store" class="h-10 md:h-12 rounded-lg"></a>
+                    </div>
+                </div>
+
+                <div class="md:w-1/2 w-full flex justify-center md:justify-end">
+                    <img src="https://di-uploads-pod15.dealerinspire.com/bluegrassmotorsport/uploads/2023/08/2308-Porsche-718-Cayman-GT4-RS-Trim.jpg" alt="Porsche 718 Cayman GT4 RS" class="rounded-xl w-full max-w-sm lg:max-w-xl object-cover transform md:-translate-y-10 md:translate-x-4 shadow-2xl" onerror="this.onerror=null;this.src='https://placehold.co/800x600/1e40af/ffffff?text=Premium+Sports+Car';">
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 -mb-16 md:-mb-10 mt-6 md:mt-0">
+            <div class="bg-white p-4 md:p-6 shadow-2xl rounded-xl border border-gray-100">
+                <form class="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-4 items-center" onsubmit="event.preventDefault(); openModal('snackbar-modal'); document.getElementById('snackbar-message').textContent = 'Search Initiated! (Demo)';">
+                    <div class="col-span-1">
+                        <div class="relative">
+                            <i data-lucide="map-pin" class="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-600"></i>
+                            <input type="text" id="location" placeholder="Search your location" class="search-input w-full pl-12 pr-4 py-2 rounded-lg">
+                        </div>
+                    </div>
+
+                    <div class="col-span-1">
+                        <div class="relative">
+                            <i data-lucide="calendar" class="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-600"></i>
+                            <input type="text" id="pickup" placeholder="Pickup date" onfocus="(this.type='datetime-local')" onblur="if(!this.value)this.type='text'" class="search-input w-full pl-12 pr-4 py-2 rounded-lg">
+                        </div>
+                    </div>
+
+                    <div class="col-span-1">
+                        <div class="relative">
+                            <i data-lucide="calendar" class="w-5 h-5 absolute left-4 top-1/2 transform -translate-y-1/2 text-blue-600"></i>
+                            <input type="text" id="return" placeholder="Return date" onfocus="(this.type='datetime-local')" onblur="if(!this.value)this.type='text'" class="search-input w-full pl-12 pr-4 py-2 rounded-lg">
+                        </div>
+                    </div>
+
+                    <div class="col-span-1">
+                        <button type="submit" class="w-full h-[3.5rem] px-4 py-2 text-white font-semibold rounded-lg btn-primary shadow-lg hover:shadow-xl flex items-center justify-center">
+                            <i data-lucide="search" class="w-5 h-5 mr-2"></i> Search
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <main>
+        <section id="steps" class="pt-24 md:pt-32 pb-12 md:pb-20 bg-gray-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <span class="inline-block px-3 py-1 mb-3 text-xs font-semibold text-blue-600 uppercase tracking-wider bg-blue-50 border border-blue-200 rounded-full">
+                    How it Work
+                </span>
+                <h2 class="text-3xl md:text-4xl font-bold mb-10 md:mb-12">Rent with following 3 working steps</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                    <div class="p-6 bg-white rounded-xl shadow-lg flex flex-col items-center">
+                        <div class="p-4 bg-blue-100 rounded-full mb-4">
+                            <i data-lucide="map-pin" class="w-8 h-8 text-blue-600"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Choose location</h3>
+                        <p class="text-gray-600 text-base">Choose your and find your best car</p>
+                    </div>
+
+                    <div class="p-6 bg-white rounded-xl shadow-lg flex flex-col items-center">
+                        <div class="p-4 bg-blue-100 rounded-full mb-4">
+                            <i data-lucide="calendar" class="w-8 h-8 text-blue-600"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Pick-up date</h3>
+                        <p class="text-gray-600 text-base">Select your pickup date and time to book your car</p>
+                    </div>
+
+                    <div class="p-6 bg-white rounded-xl shadow-lg flex flex-col items-center">
+                        <div class="p-4 bg-blue-100 rounded-full mb-4">
+                            <i data-lucide="car" class="w-8 h-8 text-blue-600"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold mb-2">Book your car</h3>
+                        <p class="text-gray-600 text-base">Book your car and we will deliver it directly to you</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-8 md:py-12 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex flex-wrap justify-center md:justify-around items-center gap-6 opacity-60">
+                    <img src="https://assets.stickpng.com/images/580b57fcd9996e24bc43c47e.png" alt="Honda Logo" class="h-6 md:h-10 object-contain grayscale hover:grayscale-0 transition duration-300" onerror="this.onerror=null;this.src='https://placehold.co/100x40/f1f5f9/94a3b8?text=Honda';">
+                    <img src="https://logolook.net/wp-content/uploads/2023/07/Jaguar-Logo-PNG.png" alt="Jaguar Logo" class="h-6 md:h-10 object-contain grayscale hover:grayscale-0 transition duration-300" onerror="this.onerror=null;this.src='https://placehold.co/100x40/f1f5f9/94a3b8?text=Jaguar';">
+                    <img src="https://assets.stickpng.com/images/580b57fcd9996e24bc43c4d5.png" alt="Volvo Logo" class="h-6 md:h-10 object-contain grayscale hover:grayscale-0 transition duration-300" onerror="this.onerror=null;this.src='https://placehold.co/100x40/f1f5f9/94a3b8?text=Volvo';">
+                    <img src="https://assets.stickpng.com/images/580b57fcd9996e24bc43c483.png" alt="Audi Logo" class="h-6 md:h-10 object-contain grayscale hover:grayscale-0 transition duration-300" onerror="this.onerror=null;this.src='https://placehold.co/100x40/f1f5f9/94a3b8?text=Audi';">
+                    <img src="https://assets.stickpng.com/images/580b57fcd9996e24bc43c49a.png" alt="Mercedes Logo" class="h-6 md:h-10 object-contain grayscale hover:grayscale-0 transition duration-300" onerror="this.onerror=null;this.src='https://placehold.co/100x40/f1f5f9/94a3b8?text=Mercedes';">
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="py-12 md:py-20 bg-gray-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center gap-10 md:gap-16">
+                <div class="md:w-1/2 w-full flex justify-center order-2 md:order-1">
+                    <img src="https://ccarprice.com/products/Audi_R8_Manual_2024.jpg" 
+                         alt="Premium silver car" 
+                         class="rounded-xl shadow-2xl w-full max-w-lg object-cover"
+                         onerror="this.onerror=null;this.src='https://placehold.co/800x600/1e40af/ffffff?text=Premium+Rental+Experience';">
+                </div>
+
+                <div class="md:w-1/2 w-full order-1 md:order-2">
+                    <span class="text-sm font-bold text-blue-600 uppercase tracking-widest mb-2 block">Premium service</span>
+                    <h2 class="text-3xl md:text-4xl font-extrabold mb-4 md:mb-6">
+                        We offer the best experience with our rental deals
+                    </h2>
+                    <p class="text-gray-600 text-base mb-6 md:mb-8">
+                        Our commitment is to provide you with the smoothest, most secure, and most enjoyable rental experience possible.
+                    </p>
+
+                    <div class="space-y-6">
+                        <div class="flex items-start">
+                            <i data-lucide="shield-check" class="w-6 h-6 text-blue-600 mr-3 mt-1 flex-shrink-0"></i>
+                            <div>
+                                <h4 class="font-semibold text-lg">Peace of mind guaranteed</h4>
+                                <p class="text-gray-500 text-sm">Every rental includes full insurance coverage.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start">
+                            <i data-lucide="heart" class="w-6 h-6 text-blue-600 mr-3 mt-1 flex-shrink-0"></i>
+                            <div>
+                                <h4 class="font-semibold text-lg">Experience our unlimited mileage</h4>
+                                <p class="text-gray-500 text-sm">Travel as far as you want without worrying about limits.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start">
+                            <i data-lucide="clock" class="w-6 h-6 text-blue-600 mr-3 mt-1 flex-shrink-0"></i>
+                            <div>
+                                <h4 class="font-semibold text-lg">24/7 dedicated support</h4>
+                                <p class="text-gray-500 text-sm">Our team is always ready to assist you, day or night.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="deals" class="py-12 md:py-20 bg-white">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-8 md:mb-12">Most popular cars rental deals</h2>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+                    <div class="car-card bg-white rounded-xl shadow-lg p-5 border border-gray-100">
+                        <img src="https://www.pngplay.com/wp-content/uploads/13/Jaguar-XE-Project-8-Transparent-File.png" alt="Jaguar XE L P250" class="w-full h-32 object-contain rounded-lg mb-4" onerror="this.onerror=null;this.src='https://placehold.co/400x150/f1f5f9/1e40af?text=Jaguar+Sedan';">
+                        <h4 class="text-xl font-bold mb-1">Jaguar XE L P250</h4>
+                        <div class="flex flex-col md:flex-row md:justify-between md:items-end mb-4 gap-2">
+                            <div class="text-2xl font-extrabold text-blue-700">$1,800<span class="text-sm font-normal text-gray-500">/day</span></div>
+                            <div class="text-sm text-yellow-500 font-bold flex items-center">
+                                <i data-lucide="star" class="w-4 h-4 mr-1 fill-yellow-500 stroke-yellow-500"></i> 4.8 <span class="text-gray-500 font-normal ml-1 text-xs">(2,435 reviews)</span>
+                            </div>
+                        </div>
+                        <button onclick="openRentForm('Jaguar XE L P250', 1800)" class="w-full py-2.5 text-white font-semibold rounded-lg btn-primary shadow-md">Rent Now</button>
+                    </div>
+
+                    <div class="car-card bg-white rounded-xl shadow-lg p-5 border border-gray-100">
+                        <img src="https://www.pngplay.com/wp-content/uploads/13/Audi-R8-2019-Transparent-PNG.png" alt="Audi R8" class="w-full h-32 object-contain rounded-lg mb-4" onerror="this.onerror=null;this.src='https://placehold.co/400x150/f1f5f9/1e40af?text=Audi+Sports+Car';">
+                        <h4 class="text-xl font-bold mb-1">Audi R8</h4>
+                        <div class="flex flex-col md:flex-row md:justify-between md:items-end mb-4 gap-2">
+                            <div class="text-2xl font-extrabold text-blue-700">$2,100<span class="text-sm font-normal text-gray-500">/day</span></div>
+                            <div class="text-sm text-yellow-500 font-bold flex items-center">
+                                <i data-lucide="star" class="w-4 h-4 mr-1 fill-yellow-500 stroke-yellow-500"></i> 4.6 <span class="text-gray-500 font-normal ml-1 text-xs">(1,000 reviews)</span>
+                            </div>
+                        </div>
+                        <button onclick="openRentForm('Audi R8', 2100)" class="w-full py-2.5 text-white font-semibold rounded-lg btn-primary shadow-md">Rent Now</button>
+                    </div>
+
+                    <div class="car-card bg-white rounded-xl shadow-lg p-5 border border-gray-100">
+                        <img src="https://www.pngplay.com/wp-content/uploads/13/BMW-M3-2019-PNG-Images-HD.png" alt="BMW M3" class="w-full h-32 object-contain rounded-lg mb-4" onerror="this.onerror=null;this.src='https://placehold.co/400x150/f1f5f9/1e40af?text=BMW+M3';">
+                        <h4 class="text-xl font-bold mb-1">BMW M3</h4>
+                        <div class="flex flex-col md:flex-row md:justify-between md:items-end mb-4 gap-2">
+                            <div class="text-2xl font-extrabold text-blue-700">$1,600<span class="text-sm font-normal text-gray-500">/day</span></div>
+                            <div class="text-sm text-yellow-500 font-bold flex items-center">
+                                <i data-lucide="star" class="w-4 h-4 mr-1 fill-yellow-500 stroke-yellow-500"></i> 4.5 <span class="text-gray-500 font-normal ml-1 text-xs">(2,936 reviews)</span>
+                            </div>
+                        </div>
+                        <button onclick="openRentForm('BMW M3', 1600)" class="w-full py-2.5 text-white font-semibold rounded-lg btn-primary shadow-md">Rent Now</button>
+                    </div>
+
+                    <div class="car-card bg-white rounded-xl shadow-lg p-5 border border-gray-100">
+                        <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRgY9g1VOj2MBRj-LcRMmNu4AnOIu5LupntPAiDS-pE3uL0yd6FOHUJKTRA&s=10" alt="Lamborghini Huracan" class="w-full h-32 object-contain rounded-lg mb-4" onerror="this.onerror=null;this.src='https://placehold.co/400x150/f1f5f9/1e40af?text=Lambo+Huracan';">
+                        <h4 class="text-xl font-bold mb-1">Lamborghini Huracan</h4>
+                        <div class="flex flex-col md:flex-row md:justify-between md:items-end mb-4 gap-2">
+                            <div class="text-2xl font-extrabold text-blue-700">$2,300<span class="text-sm font-normal text-gray-500">/day</span></div>
+                            <div class="text-sm text-yellow-500 font-bold flex items-center">
+                                <i data-lucide="star" class="w-4 h-4 mr-1 fill-yellow-500 stroke-yellow-500"></i> 4.9 <span class="text-gray-500 font-normal ml-1 text-xs">(2,236 reviews)</span>
+                            </div>
+                        </div>
+                        <button onclick="openRentForm('Lamborghini Huracan', 2300)" class="w-full py-2.5 text-white font-semibold rounded-lg btn-primary shadow-md">Rent Now</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="reviews" class="py-12 md:py-20 bg-gray-50 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-64 h-64 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
+            <div class="absolute bottom-0 right-0 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
+
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-8 md:mb-10">What people say about us?</h2>
+
+                <div class="testimonial-slider flex overflow-x-auto justify-start gap-6 pb-6 lg:pb-0">
+                    <div class="testimonial-card bg-white rounded-xl shadow-2xl border border-gray-100">
+                        <div class="testimonial-image-wrapper">
+                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRDxy7sTh3Ud9mGs-ucLzRc_Ip39YnVTkwYM7nPSnJw0019AnvO5orSShg&s=10" alt="Charlie Johnson Review Image" onerror="this.onerror=null;this.src='https://placehold.co/550x400/bfdbfe/4c66ff?text=Client+Photo+1';">
+                        </div>
+                        <div class="testimonial-content">
+                            <div>
+                                <div class="text-3xl font-extrabold text-gray-800 mb-1 flex items-center">5.0 <span class="text-xl ml-2 text-yellow-500">★★★★★</span></div>
+                                <p class="text-gray-600 italic mb-4 text-base">"I feel very secure when using caretall's services. Your customer care team is very enthusiastic and the driver is always on time."</p>
+                            </div>
+                            <div>
+                                <p class="font-bold text-xl">Charlie Johnson</p>
+                                <p class="text-sm text-gray-500">From New York, US</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="testimonial-card bg-white rounded-xl shadow-2xl border border-gray-100">
+                         <div class="testimonial-image-wrapper">
+                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTLOz-7JVk1vuP027b40fA0O7PCkKdsblQLus4-DeR2NF9ec3LcCGYOcA2m&s=10" alt="Sarah Wilson Review Image" onerror="this.onerror=null;this.src='https://placehold.co/550x400/bfdbfe/4c66ff?text=Client+Photo+2';">
+                        </div>
+                        <div class="testimonial-content">
+                            <div>
+                                <div class="text-3xl font-extrabold text-gray-800 mb-1 flex items-center">5.0 <span class="text-xl ml-2 text-yellow-500">★★★★★</span></div>
+                                <p class="text-gray-600 italic mb-4 text-base">"The booking was flawless and the car was immaculate. The staff was incredibly friendly and helpful. Best rental experience I've ever had!"</p>
+                            </div>
+                            <div>
+                                <p class="font-bold text-xl">Sarah Wilson</p>
+                                <p class="text-sm text-gray-500">From New York, US</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="testimonial-card bg-white rounded-xl shadow-2xl border border-gray-100">
+                        <div class="testimonial-image-wrapper">
+                            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRvaRWDxmuy-PcFZjGrCDuu2TuRNrZojPEqJxs78_WQaOba4bp9tPjQr2Y&s=10" alt="Amanda Ross Review Image" onerror="this.onerror=null;this.src='https://placehold.co/550x400/bfdbfe/4c66ff?text=Client+Photo+3';">
+                        </div>
+                        <div class="testimonial-content">
+                            <div>
+                                <div class="text-3xl font-extrabold text-gray-800 mb-1 flex items-center">4.9 <span class="text-xl ml-2 text-yellow-500">★★★★★</span></div>
+                                <p class="text-gray-600 italic mb-4 text-base">"Needed a last-minute SUV and RentCars delivered quickly. The pickup and drop-off were seamless. I'll definitely be a repeat customer."</p>
+                            </div>
+                            <div>
+                                <p class="font-bold text-xl">Amanda Ross</p>
+                            <p class="text-sm text-gray-500">From Los Angeles, US</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="py-12 md:py-20 bg-gray-50 text-gray-800 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-64 h-64 bg-blue-100 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
+            <div class="absolute bottom-0 right-0 w-80 h-80 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
+            
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between">
+                <div class="md:w-1/2 w-full mb-8 md:mb-0 text-center md:text-left">
+                    <span class="inline-block px-3 py-1 mb-3 text-xs font-semibold text-blue-600 uppercase tracking-wider bg-blue-50 border border-blue-200 rounded-full">
+                        DOWNLOAD
+                    </span>
+                    <h2 class="text-3xl md:text-4xl font-extrabold mb-4">
+                        Download Rentcars App for <span class="text-blue-700">FREE</span>
+                    </h2>
+                    <p class="text-gray-600 text-base mb-6 md:mb-8">
+                        For faster, easier booking and exclusive deals.
+                    </p>
+
+                    <div class="flex justify-center md:justify-start space-x-4">
+                        <a href="https://play.google.com/store" target="_blank" class="inline-block"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Google_Play_Store_badge_EN.svg/2560px-Google_Play_Store_badge_EN.svg.png" alt="Get it on Google Play" class="h-10 md:h-12" onerror="this.onerror=null;this.src='https://placehold.co/150x50/1e40af/ffffff?text=Google+Play';"></a>
+                        <a href="https://www.apple.com/app-store/" target="_blank" class="inline-block"><img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Download_on_the_App_Store_Badge.svg/2560px-Download_on_the_App_Store_Badge.svg.png" alt="Download on the App Store" class="h-10 md:h-12" onerror="this.onerror=null;this.src='https://placehold.co/150x50/1e40af/ffffff?text=App+Store';"></a>
+                    </div>
+                </div>
+
+                <div class="md:w-1/2 w-full flex justify-center md:justify-end relative mt-6 md:mt-0">
+                    <div class="relative w-32 h-[14rem] md:w-40 md:h-[18rem] rounded-2xl bg-black shadow-2xl overflow-hidden border-[6px] border-gray-900">
+                        <div class="absolute inset-0 p-2 bg-white">
+                            <div class="flex justify-between items-center text-[8px] md:text-[10px] mb-1">
+                                <span class="font-semibold">10:01</span>
+                                <div class="w-6 md:w-8 h-1 bg-black rounded-full"></div>
+                                <div class="flex items-center space-x-0.5">
+                                    <i data-lucide="signal" class="w-2 h-2 md:w-2.5 md:h-2.5"></i>
+                                    <i data-lucide="wifi" class="w-2 h-2 md:w-2.5 md:h-2.5"></i>
+                                    <i data-lucide="battery" class="w-2.5 h-2.5 md:w-3 md:h-3"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-between items-center py-1">
+                                <i data-lucide="chevron-left" class="w-3 h-3 md:w-4 md:h-4 text-gray-700"></i>
+                                <i data-lucide="heart" class="w-2.5 h-2.5 md:w-3 md:h-3 text-gray-400"></i>
+                            </div>
+
+                            <div class="flex justify-center mt-2">
+                                <img src="https://www.pngplay.com/wp-content/uploads/13/Jaguar-XE-Project-8-Transparent-File.png" alt="Blue Sedan Car App Screen" class="w-24 md:w-32 h-auto object-contain" onerror="this.onerror=null;this.src='https://placehold.co/100x50/f1f5f9/1e40af?text=Car+Placeholder';">
+                            </div>
+
+                            <div class="absolute bottom-0 left-0 right-0 h-16 md:h-20 bg-blue-50 opacity-50 rounded-full transform scale-[1.5] -translate-y-4"></div>
+                            <div class="absolute bottom-0 left-0 right-0 h-16 md:h-20 bg-blue-100 opacity-30 rounded-full transform scale-[1.3] -translate-y-2"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer id="contact" class="bg-gray-950 text-gray-300 py-12 md:py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-8 border-b border-gray-800 pb-8 mb-8">
+                <div class="col-span-2 md:col-span-2 text-center md:text-left">
+                    <a href="#" class="text-3xl font-extrabold text-blue-500 mb-4 block">
+                        Rent<span class="text-white">Cars</span>
+                    </a>
+                    <p class="text-sm mb-4">The best way to rent a car, anytime and anywhere.</p>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex items-center justify-center md:justify-start">
+                            <i data-lucide="phone-call" class="w-4 h-4 mr-2 text-blue-400"></i>
+                            <span>+1 (555) 123-4567</span>
+                        </div>
+                        <div class="flex items-center justify-center md:justify-start">
+                            <i data-lucide="mail" class="w-4 h-4 mr-2 text-blue-400"></i>
+                            <span>support@rentcars.com</span>
+                        </div>
+                        <div class="flex items-center justify-center md:justify-start">
+                            <i data-lucide="map-pin" class="w-4 h-4 mr-2 text-blue-400"></i>
+                            <span>123 Car St, Rent City, 90210</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-center md:text-left">
+                    <h5 class="text-white font-semibold mb-4 text-lg">Company</h5>
+                    <ul class="space-y-3 text-sm">
+                        <li><a href="#about" class="hover:text-blue-400 transition">About Us</a></li>
+                        <li><a href="#" class="hover:text-blue-400 transition">Careers</a></li>
+                        <li><a href="#" class="hover:text-blue-400 transition">Blog</a></li>
+                        <li><a href="#" class="hover:text-blue-400 transition">Partners</a></li>
+                    </ul>
+                </div>
+
+                <div class="text-center md:text-left">
+                    <h5 class="text-white font-semibold mb-4 text-lg">Support</h5>
+                    <ul class="space-y-3 text-sm">
+                        <li><a href="#" class="hover:text-blue-400 transition">Help Center</a></li>
+                        <li><a href="#" class="hover:text-blue-400 transition">FAQs</a></li>
+                        <li><a href="#contact" class="hover:text-blue-400 transition">Contact Us</a></li>
+                        <li><a href="#" class="hover:text-blue-400 transition">Sitemap</a></li>
+                    </ul>
+                </div>
+
+                <div class="text-center md:text-left">
+                    <h5 class="text-white font-semibold mb-4 text-lg">Legal</h5>
+                    <ul class="space-y-3 text-sm">
+                        <li><a href="#" class="hover:text-blue-400 transition">Terms of Use</a></li>
+                        <li><a href="#" class="hover:text-blue-400 transition">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-blue-400 transition">Cookie Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="text-center text-sm text-gray-500 pt-6">
+                &copy; 2025 RentCars. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <div id="signin-modal" class="modal" role="dialog" aria-modal="true">
+        <div class="modal-content p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">Sign In</h3>
+                <button onclick="closeModal('signin-modal')" class="text-gray-500 hover:text-gray-700" aria-label="Close sign in form">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <form id="signin-form" class="space-y-4">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <div class="relative">
+                        <input type="password" id="password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pr-10">
+                        <button type="button" onclick="togglePasswordVisibility('password')" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500" aria-label="Toggle password visibility">
+                            <i data-lucide="eye" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="remember" class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <label for="remember" class="ml-2 block text-sm text-gray-700">Remember me</label>
+                    </div>
+                    <a href="#" class="text-sm text-blue-600 hover:text-blue-800">Forgot password?</a>
+                </div>
+                <button type="submit" class="w-full py-3 text-white font-semibold rounded-lg btn-primary shadow-md">Sign In</button>
+            </form>
+            <div class="mt-4 text-center">
+                <p class="text-sm text-gray-600">Don't have an account? 
+                    <button onclick="closeModal('signin-modal'); openModal('register-modal')" class="text-blue-600 font-medium hover:text-blue-800">Register now</button>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div id="register-modal" class="modal" role="dialog" aria-modal="true">
+        <div class="modal-content p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">Create Account</h3>
+                <button onclick="closeModal('register-modal')" class="text-gray-500 hover:text-gray-700" aria-label="Close registration form">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <form id="register-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="first-name" class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                        <input type="text" id="first-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="last-name" class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                        <input type="text" id="last-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label for="reg-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="reg-email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="reg-password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <div class="relative">
+                        <input type="password" id="reg-password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pr-10">
+                        <button type="button" onclick="togglePasswordVisibility('reg-password')" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500" aria-label="Toggle password visibility">
+                            <i data-lucide="eye" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                    <div class="relative">
+                        <input type="password" id="confirm-password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 pr-10">
+                        <button type="button" onclick="togglePasswordVisibility('confirm-password')" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500" aria-label="Toggle password visibility">
+                            <i data-lucide="eye" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="terms" required class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="terms" class="ml-2 block text-sm text-gray-700">I agree to the <a href="#" class="text-blue-600 hover:text-blue-800">Terms of Service</a> and <a href="#" class="text-blue-600 hover:text-blue-800">Privacy Policy</a></label>
+                </div>
+                <button type="submit" class="w-full py-3 text-white font-semibold rounded-lg btn-primary shadow-md">Create Account</button>
+            </form>
+            <div class="mt-4 text-center">
+                <p class="text-sm text-gray-600">Already have an account? 
+                    <button onclick="closeModal('register-modal'); openModal('signin-modal')" class="text-blue-600 font-medium hover:text-blue-800">Sign In</button>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div id="rent-modal" class="modal" role="dialog" aria-modal="true">
+        <div class="modal-content p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800">Rent a Car</h3>
+                <button onclick="closeModal('rent-modal')" class="text-gray-500 hover:text-gray-700" aria-label="Close rental form">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <form id="rent-form" class="space-y-4">
+                <div>
+                    <h4 id="selected-car" class="text-lg font-bold text-blue-700 mb-4 border-b pb-2"></h4>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="pickup-date" class="block text-sm font-medium text-gray-700 mb-1">Pickup Date</label>
+                        <input type="date" id="pickup-date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="return-date" class="block text-sm font-medium text-gray-700 mb-1">Return Date</label>
+                        <input type="date" id="return-date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label for="pickup-location" class="block text-sm font-medium text-gray-700 mb-1">Pickup Location</label>
+                    <input type="text" id="pickup-location" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="return-location" class="block text-sm font-medium text-gray-700 mb-1">Return Location</label>
+                    <input type="text" id="return-location" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="full-name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input type="text" id="full-name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                        <input type="tel" id="phone" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label for="email-rent" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email-rent" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="driver-license" class="block text-sm font-medium text-gray-700 mb-1">Driver's License Number</label>
+                    <input type="text" id="driver-license" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="insurance" required class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label for="insurance" class="ml-2 block text-sm text-gray-700">I agree to the insurance terms and conditions</label>
+                </div>
+                <div class="bg-blue-50 p-4 rounded-lg">
+                    <div class="flex justify-between">
+                        <span class="font-medium text-base">Estimated Total:</span>
+                        <span id="estimated-total" class="font-bold text-blue-700 text-base"></span>
+                    </div>
+                    <p class="text-xs text-gray-600 mt-2">Final price may vary based on actual rental duration and taxes.</p>
+                </div>
+                <button type="submit" class="w-full py-3 text-white font-semibold rounded-lg btn-primary shadow-md">Complete Booking</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="snackbar-modal" class="modal" role="dialog" aria-modal="true">
+        <div class="modal-content bg-white p-6 w-full max-w-sm rounded-lg shadow-xl text-center">
+            <h4 id="snackbar-message" class="text-lg font-semibold text-gray-800 mb-4"></h4>
+            <button onclick="closeModal('snackbar-modal')" class="w-full py-2 text-white font-semibold rounded-lg btn-primary shadow-md">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // === CRITICAL FUNCTION DEFINITIONS (MUST BE GLOBAL) ===
+
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            const isOpen = mobileMenu.classList.contains('translate-x-0');
+            if (isOpen) {
+                mobileMenu.classList.remove('translate-x-0');
+                mobileMenu.classList.add('-translate-x-full');
+                setTimeout(() => { mobileMenu.classList.add('hidden'); }, 300);
+            } else {
+                mobileMenu.classList.remove('hidden');
+                setTimeout(() => {
+                    mobileMenu.classList.remove('-translate-x-full');
+                    mobileMenu.classList.add('translate-x-0');
+                }, 10);
+            }
+        }
+
+        // Modal functions
+        function openModal(modalId) {
+            console.log('Action Triggered: Attempting to open modal:', modalId); // DEBUG LOG
+            document.getElementById(modalId).style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        function togglePasswordVisibility(inputId) {
+            console.log('Action Triggered: Toggle password visibility for:', inputId); // DEBUG LOG
+            const passwordInput = document.getElementById(inputId);
+            const iconElement = passwordInput.parentElement.querySelector('button i'); // Target the icon inside the button
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                iconElement.setAttribute('data-lucide', 'eye-off');
+            } else {
+                passwordInput.type = 'password';
+                iconElement.setAttribute('data-lucide', 'eye');
+            }
+            // Re-render the icon after changing the attribute
+            if (window.createIcons) {
+                window.createIcons();
+            }
+        }
+
+        // Open rent form with car details
+        function openRentForm(carName, pricePerDay) {
+            console.log('Action Triggered: Attempting to open Rent Form for:', carName); // DEBUG LOG
+            document.getElementById('selected-car').textContent = `Booking: ${carName}`;
+            document.getElementById('estimated-total').textContent = `$${pricePerDay}/day`;
+            openModal('rent-modal');
+        }
+
+        // Form submission handlers (using custom modal instead of alert)
+        document.getElementById('signin-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('Form Submitted: Sign In');
+            document.getElementById('snackbar-message').textContent = 'Sign In Successful! (Demo)';
+            closeModal('signin-modal');
+            openModal('snackbar-modal');
+        });
+
+        document.getElementById('register-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            console.log('Form Submitted: Registration');
+            const password = document.getElementById('reg-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            if (password !== confirmPassword) {
+                console.error('Registration failed: Passwords do not match!');
+                document.getElementById('snackbar-message').textContent = 'Registration failed: Passwords do not match!';
+                closeModal('register-modal');
+                openModal('snackbar-modal');
+                return;
+            }
+            
+            document.getElementById('snackbar-message').textContent = 'Registration Successful! (Demo)';
+            closeModal('register-modal');
+            openModal('snackbar-modal');
+        });
+
+        document.getElementById('rent-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const carName = document.getElementById('selected-car').textContent;
+            console.log('Form Submitted: Rental for', carName);
+            document.getElementById('snackbar-message').textContent = `Booking for ${carName} submitted. Thank you! (Demo)`;
+            closeModal('rent-modal');
+            openModal('snackbar-modal');
+        });
+
+        // Initialize script logic (runs after DOMContentLoaded and all resources are loaded)
+        window.onload = function() {
+            console.log("RentCars UI loaded and ready for all devices.");
+
+            // Set min date for rental forms to today
+            const today = new Date().toISOString().split('T')[0];
+            const pickupDateInput = document.getElementById('pickup-date');
+            const returnDateInput = document.getElementById('return-date');
+            if (pickupDateInput) {
+                pickupDateInput.min = today;
+            }
+            if (returnDateInput) {
+                returnDateInput.min = today;
+            }
+
+
+            // Set placeholders for hero date inputs
+            const pickupInput = document.getElementById('pickup');
+            const returnInput = document.getElementById('return');
+            if (pickupInput) {
+                pickupInput.placeholder = "Pickup Date & Time";
+            }
+            if (returnInput) {
+                returnInput.placeholder = "Return Date & Time";
+            }
+        };
+    </script>
+</body>
+</html>
